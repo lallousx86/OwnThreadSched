@@ -1,0 +1,470 @@
+<!--------------------------------------------------------------------------->
+<!--                           INTRODUCTION                                
+
+ The Code Project article submission template (HTML version)
+
+Using this template will help us post your article sooner. To use, just 
+follow the 3 easy steps below:
+ 
+     1. Fill in the article description details
+     2. Add links to your images and downloads
+     3. Include the main article text
+
+That's all there is to it! All formatting will be done by our submission
+scripts and style sheets. 
+
+-->
+<!--------------------------------------------------------------------------->
+<!--                        IGNORE THIS SECTION                            -->
+<html>
+<head>
+<title>The Code Project - Quick C++/CLI - Learn C++/CLI in less than 10 minutes</title>
+<Style>
+BODY, P, TD {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 10pt
+}
+H2, H3, H4, H5 {
+	color: #ff9900;
+	font-weight: bold;
+}
+H2 {
+	font-size: 13pt;
+}
+H3 {
+	font-size: 12pt;
+}
+H4 {
+	font-size: 10pt;
+	color: black;
+}
+PRE {
+	BACKGROUND-COLOR: #FBEDBB;
+	FONT-FAMILY: "Courier New", Courier, mono;
+	WHITE-SPACE: pre;
+}
+CODE {
+	COLOR: #990000;
+	FONT-FAMILY: "Courier New", Courier, mono;
+}
+</style>
+<link rel="stylesheet" type=text/css href="http://www.codeproject.com/styles/global.css">
+</head>
+<body bgcolor="#FFFFFF" color=#000000>
+<!--------------------------------------------------------------------------->
+<!-------------------------------     STEP 1      --------------------------->
+<!--  Fill in the details (CodeProject will reformat this section for you) -->
+<pre>
+Title:       "Threads" without threads
+Author:      Elias Bachaalany
+Email:       lallousz-x86@yahoo.com
+Environment: VC++
+Keywords:    C++ Macros Threads
+Level:       Beginner/Intermediate
+Description: An article introducing how threads work and how to emulate/achieve multithreading without the help of the operating system API calls
+Section      General
+SubSection   Threads
+</pre>
+<!-------------------------------     STEP 2      --------------------------->
+<!--  Include download and sample image information.                       -->
+
+<!--  Add the article text. Please use simple formatting (<h2>, <p> etc)   -->
+<h2>Introduction</h2>
+<p>Let me start by talking about this paradoxial title: &quot;Threads&quot; without threads. I deliberately chosen such a confusing article so that you don't think something like &quot;Oh, I already know how to create threads in Windows and .NET, Why would I want to read this article?!&quot;. This article is totally different and does not teach you how to use APIs to create threads, instead it will attempt to show you how the operating system achieves multithreading with the help of the CPU and how to create your own &quot;pseudo&quot; (if I may call it so) thread management APIs.<br>
+<p>Already excited and want to know how? Well, hang on a bit until we talk a little about threads and how the operating system achieves multithreading.</p>
+<h2>Background</h2>
+In Windows OS, threads are basic execution units, and an execution unit is a set of instructions that run in a certain order (or flow).<br>
+A process is a host of one or more threads that are  executing (seemingly) in parallel. The reason I say seemingly is because if you have  a single processor machine then only one instruction can run at a time, however if we run an instruction belonging to a thread at time T, then another belonging to another thread at time T+1, and when done so fast  it will appear as if both threads are running  at the same time.<br>
+<br>
+Consider the case of a single threaded process:
+<pre><ol><li>int main()
+<li>{
+<li>	char name[100];
+<li>	printf("Enter your name:");
+<li>	gets(name)
+<li>	printf("You entered: %s\n", name);
+<li>	return 0;
+<li>}
+</ol>
+</pre>
+This program will get executed from the first instruction to the last instruction (since there are no branching) without interruptions since it is a single threaded process. <br><br>
+Now say you have two methods that you want to run in "parallel", for this you need to create a thread for each method, and here is what generally happens: <br><br>
+
+<table border="1" cellpadding="1" cellspacing="1">
+  <tr>
+    <td width="371">Thread #1</td>
+    <td width="374">Thread #2</td>
+  </tr>
+  <tr>
+    <td height="311" align="left" valign="top">
+<pre>
+<ol>
+<li>int method1()
+<li>{
+<li>	printf("method1: instruction 1");
+<li>	printf("method1: instruction 2");
+<li>	printf("method1: instruction 3");
+<li>	printf("method1: instruction 4");
+<li>	return 0;
+<li>}
+</ol>
+</pre>
+   
+</td>
+    <td align="left" valign="top">
+<pre>
+<ol>
+<li>int method2()
+<li>{
+<li>	printf("method2: instruction 1");
+<li>	printf("method2: instruction 2");
+<li>	printf("method2: instruction 3");
+<li>	printf("method2: instruction 4");
+<li>	printf("method2: instruction 5");
+<li>	printf("method2: instruction 6");
+<li>	return 0;
+<li>}
+</ol>
+</pre>
+     </td>
+  </tr>
+</table>
+<ol>
+<li>The OS selects a thread to start with: it can be thread#1, thread#2 or thread #n
+<li>The OS (based on thread priorities and other conditions) gives some time to the thread in order for it to execute some of its instructions
+<li>The OS decides that it is time to suspend the thread and yield execution to another thread, and that generally involves:
+  <ol>
+<li>Saving the current execution context: the OS needs to save the state and all the variables (registers) of the current executing thread
+<li>Suspends the current thread
+<li>Selects the next thread to resume
+<li>Restores that thread's previously saved state
+<li>Once the next thread's state is restored, the OS resume the thread execution
+</ol>
+<li>Step 2 and 3 repeat as long as there are threads running
+</ol>
+<p>For the sake of illustration only, when we run thread#1 and thread#2 in parallel an output like this may show:
+<pre>
+method2: instruction 1
+method2: instruction 2
+method1: instruction 1
+method2: instruction 3
+method2: instruction 4
+method1: instruction 2
+.
+.
+.
+</pre>
+Notice how the execution of thread#1 and thread#2 happens somehow in an intermixed sequence (between the two threads).
+
+If you have more than a CPU then you can have true parallel execution since each CPU can run a thread, and there would be no need to interrupt a thread in order to run another thread.
+<p>It is important to note that execution interruption does not happen at the level of a high-level code instruction (such as C++'s <code>cout</code> or C's <code>printf()</code>), rather it happens on the machine instruction level. That means a printf() statement can translate to many machine instructions, and the printf() itself may be interrupted many times before it is fully executed.</p>
+<p>In the coming section I will be using the word &quot;atomic&quot; simply to mean the smallest instruction that we can interrupt. In the case of high-level languages,  statements can be considered as atomic statements (or smallest executing instruction).</p>
+<h2>Emulating multithreading</h2>
+<p>Now that we have introduced how multithreading work, it is time to show you how to imitate such a system.</p>
+<p> Our main objective is to be able to run a instruction #1 inside method#1 then be able to run instruction #1 in method#2 then resume execution inside method#1 at instruction #2, going back and forth between 2 or more methods until all methods finish executing.</p>
+<p> To achieve this, we need to be able to save the current executing instruction # and not execute it again and for that we need to devise our own system of &quot;program counter&quot; or &quot;instruction pointer&quot; variable that will save at which instruction we are and a way to number each instruction (so that we simulate addressing scheme). Let us look at this: </p>
+<pre>
+int method1()
+{
+	static int pc = 1; // get's initialized once
+    
+    if (pc == 1)
+    	printf("method1: instruction 1\n");
+    if (pc == 2)
+    	printf("method1: instruction 2\n");
+    if (pc == 3)
+    	printf("method1: instruction 3\n");
+    if (pc == 4)
+    	printf("method1: instruction 4\n");
+    if (pc == 5)
+    {
+    	pc = 1;
+    	return -1; // mark end of execution
+    }   
+    pc++;
+    
+    return 0;
+}
+</pre>
+If you look at that code, then calling method1() like that:
+<pre>while (method1() != -1) { }</pre>
+<p>is something very intuitive! and as you notice using this simple method we managed to run an instruction each time we call the method. But I bet you feel it is not very practicle for many reasons: (1) we need to number each instruction by hardcoding its sequential number (2) we can't really reset the execution of a method from the beginning (3) any non static variable will lose its state everytime the function is called (4) etc...</p>
+<p>We are not going to address all the problems, instead we will solve problem (1) using C++ macros to automate the instruction addressing and make the code above a little elegant.<br>
+<p>Now instead of hardcoding an instruction number, we are going to introduce a local variable that will count the instructions for us, so the code becomes something like that:<br>
+<pre>
+int method1()
+{
+	static int pc = 1; // get's initialized once
+    int pci = 1; // local variable that counts the instructions
+    
+    if (pc == pci++) // pci is ONE
+    	printf("method1: instruction 1\n");
+    if (pc == pci++) // pci++ is TWO
+    	printf("method1: instruction 2\n");
+    if (pc == pci++) //
+    	printf("method1: instruction 3\n");
+    if (pc == pci++)
+    	printf("method1: instruction 4\n");
+        
+    if (pc == pci++)
+    {
+    	pc = 1;
+    	return -1; // mark end of execution
+    }   
+    pc++;
+    
+    return 0;
+}
+</pre>
+That way, no more hardcoding anything and the problem is solved for us, all we need to do is create some macros:
+<pre>
+// We use it in the start of the method so that it declares the needed address tracking and instruction pointer tracking
+#define ATOMIC_METHOD_BEGIN(name) \
+  static int _counter = 1; \
+  int _pci = 1;
+
+// We use it to enclose the smallest instruction that we can interrupt
+#define ATOMIC_STATEMENT(x) \
+  if (_pci++ == _counter) \
+  { \
+    x; \
+  }
+  
+// We use this macro to denote the end of the function. It returns -1 so that we know it is over with execution  
+#define ATOMIC_METHOD_END \
+  _counter++; \
+  ATOMIC_STATEMENT(_counter = 1; return -1)
+
+</pre>
+If we implement those macros, the code becomes cleaner:
+<pre>
+int method1()
+{
+  ATOMIC_METHOD_BEGIN(method1);
+
+  ATOMIC_STATEMENT(printf("m1:step1\n"));
+  ATOMIC_STATEMENT(printf("m1:step2\n"));
+  ATOMIC_STATEMENT(printf("m1:step3\n"));
+  ATOMIC_STATEMENT(printf("m1:step4\n"));
+
+  ATOMIC_METHOD_END;
+  return 0;
+}
+
+</pre>
+
+<p>Cool huh?! Now let us create another method and then run both methods in an intermixed manner to simulate multithreading:<br>
+<pre>
+int method2()
+{
+  ATOMIC_METHOD_BEGIN(method2);
+
+  ATOMIC_STATEMENT(printf("m2:step1\n"));
+  ATOMIC_STATEMENT(printf("m2:step2\n"));
+  ATOMIC_STATEMENT(printf("m2:step3\n"));
+  ATOMIC_STATEMENT(printf("m2:step4\n"));
+
+  ATOMIC_METHOD_END;
+  return 0;
+}
+</pre>
+</p>
+And now, let us write a small and simple thread execution dispatcher, this algorithm will call one instruction in each method until all the methods return -1:
+<pre>
+int simple_thread_controller(int count, ...)
+{
+  typedef int (*atomic_method_t)(void);
+  va_list args;
+  int i;
+
+  atomic_method_t *methods = new atomic_method_t[count];
+  int *done = new int[count];
+
+  for (i=0;i&lt;count;i++)
+    done[i] = 0;
+
+  va_start(args, count);
+
+  for (i=0;i&lt;count;i++)
+    methods[i] = va_arg(args, atomic_method_t);
+
+  va_end(args);
+
+  do 
+  {
+    int exec_something = 0;
+    for (i=0;i&lt;count;i++)
+    {
+      // skip done statement
+      if (done[i])
+        continue;
+
+      if (methods[i]() == -1)
+        done[i] = 1;
+      else
+        exec_something = 1;
+    }
+    if (!exec_something)
+      break;
+  } while(true);
+
+  delete [] methods;
+  delete [] done;
+
+	return 0;
+}
+
+</pre>
+And we test it as:
+<pre>
+int main()
+{
+  simple_thread_controller(2, method1, method2);
+  return 0;
+}
+</pre>
+
+<h2>Interruptible For-loops?</h2>
+These cool tricks are far from being a practical solution to imitating threads, but they really show how we can implement pseudo-threads using high-level facilities only.<br>
+Now what about control and repetition structures?<br>
+The answer is that you can enclose anything inside an <code>ATOMIC_STATEMENT</code> macro, for example:
+<pre>
+ATOMIC_STATEMENT(for (int i=0;i<10;i++) { printf("Hello world!\n") });
+</pre>
+<p>However, I was not satisfied with only creating atomic statements, I wanted to create interruptible for loops that can save their states and resume them each time the method is entered or exited.</p>
+<p>Let us define the basic structure needed to define  a for-loop: (1) counter variable (2) loop start/end values (3) counter incrementation process.<br>
+  So if we are able to save those state variables, and in addition to our previous interruptible method calls, we can achieve atomic for-loops in a breath.</p>
+<p>Here's one proposed solution: </p>
+<pre>
+int test_method3()
+{
+  //ATOMIC_METHOD_BEGIN(method3);
+  static int _counter = 1; 
+  int _pci = 1;
+
+  // DECLARE FOR
+  static int _i, _i_counter_start;
+  int _i_start = 1, _i_end = 4;
+
+  // BEGIN FOR
+  if (_pci++ == _counter)
+  {
+    _i_counter_start = _counter;
+    _i = _i_start;
+  }
+
+  ATOMIC_STATEMENT(printf("i=%d\n", _i));
+
+  // FOR END
+  if (_pci++ == _counter)
+  {
+    if (_i < _i_end)
+    {
+      _counter = _i_counter_start;
+      _i++;
+    }
+  }
+
+  //ATOMIC_METHOD_END 
+  if (_pci++ == _counter) 
+  { 
+    _counter = 1; 
+    return -1; 
+  }  
+  
+  _counter++;
+
+  return 0;
+}
+</pre>
+Notice how we needed first to declare for-loop state variables, then a way to mark the loop's start, and finally a way to tell whether we should loop again and to what starting point.<br>
+Now collapsing this code into elegant macros, we can get:
+<pre>
+#define ATOMIC_DECLARE_FOR(v, s, e) \
+  static int v, _##v##_counter_start ; \
+  int _##v##_start = s, _##v##_end = e;
+
+#define ATOMIC_FOR_BEGIN(v) if (_pci++ == _counter) \
+  { \
+    _##v##_counter_start = _counter; \
+    v = _##v##_start; \
+  } \
+
+#define ATOMIC_FOR_END(v) \
+  ATOMIC_STATEMENT( if (v < _##v##_end) { _counter = _##v##_counter_start; v++; } )
+
+#define ATOMIC_FOR_START(v, s, e) \
+    ATOMIC_DECLARE_FOR(v, s, e); ATOMIC_FOR_BEGIN(v);
+
+
+</pre>
+And the code becomes:
+<pre>
+int method3()
+{
+  ATOMIC_METHOD_BEGIN(method3);
+
+  ATOMIC_FOR_START(i, 1, 10);
+  {
+      ATOMIC_STATEMENT(printf("i=%d\n", i));
+  }
+  ATOMIC_FOR_END(i);
+
+  ATOMIC_METHOD_END;
+
+  return 0;
+}
+
+</pre>
+<br>
+You wouldn't be surprised to know that this same code allows nesting FOR-loops, would you?
+<pre>
+int method3()
+{
+  ATOMIC_METHOD_BEGIN(method3);
+
+  ATOMIC_FOR_START(i, 1, 10);
+  {
+    ATOMIC_FOR_START(j, 1, i);
+    {
+      ATOMIC_STATEMENT(printf("*"));
+    }
+    ATOMIC_FOR_END(j);
+    ATOMIC_STATEMENT(printf("\n"));
+  }
+  ATOMIC_FOR_END(i);
+
+  ATOMIC_METHOD_END;
+
+  return 0;
+}
+
+</pre>
+<h2>Can you guess what would the output be?</h2>
+If we run all of the three methods through the simple_thread_controller(), the following output will be produced:
+<pre>
+m1:step1
+m2:step1
+m1:step2
+m2:step2
+m1:step3
+m2:step3
+*m1:step4
+m2:step4
+
+**
+***
+****
+*****
+******
+*******
+********
+*********
+**********
+</pre>
+And if you run these same methods using Windows thread APIs you will  somehow get similar output.
+<h2>Conclusion</h2>
+<p>This article is written for educational purpose  and to explore a certain idea, hope it challenged your mind and you learned something out of it, it was highly inspired by the <a href="http://www.lgwm.org/projects/compel/">COMPEL</a> scripting tool.<br>
+For avid readers I leave writing more macros and more advanced thread controllers :)<br>
+</body>
+</html>

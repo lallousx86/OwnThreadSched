@@ -1,0 +1,3 @@
+http://scv.bu.edu/Doc/Java/tutorial/java/threads/simple.html
+http://www.codeguru.com/cpp/cpp/cpp_mfc/article.php/c4009/
+http://www.codeproject.com/csharp/AsyncMethodInvocation.asp
